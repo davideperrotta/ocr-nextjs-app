@@ -5,6 +5,7 @@ const App = () => {
     const [image, setImage] = useState(null);
     const [text, setText] = useState('');
     const [loading, setLoading] = useState(false);
+    const [extractedDateTime, setExtractedDateTime] = useState(''); // Nuovo stato per la data/ora estratta
     const tesseractWorkerRef = useRef(null);
 
     // Inizializza Tesseract.js
@@ -54,12 +55,24 @@ const App = () => {
         setLoading(true);
         try {
             const { data: { text } } = await tesseractWorkerRef.current.recognize(image);
+            extractSpecificData(text);
             setText(text);
         } catch (error) {
             console.error("Errore durante l'OCR:", error);
             setText('Errore durante il riconoscimento del testo.'); // Messaggio di errore semplificato
         } finally {
             setLoading(false);
+        }
+    };
+
+    const extractSpecificData = (ocrText) => {
+        const regex = /AppOCR(?:.{0,50})?(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s+\d{1,2}:\d{2})/i;
+        const match = ocrText.match(regex);
+
+        if (match && match[1]) {
+            setExtractedDateTime(match[1]);
+        } else {
+            setExtractedDateTime('Nessuna data/ora specifica trovata vicino alla parola indicata.');
         }
     };
 
@@ -125,6 +138,19 @@ const App = () => {
                     </p>
                 )}
             </div>
+
+            {extractedDateTime && (
+                <div className="w-full max-w-2xl bg-white rounded-xl p-6 border border-gray-200 shadow-md">
+                    <h2 className="text-xl font-semibold mb-4 text-gray-700 flex items-center gap-2">
+                        <File className="w-6 h-6" />
+                        Data/Ora Estratta:
+                    </h2>
+                    <div className="whitespace-pre-wrap text-green-700 font-bold bg-green-50 rounded-md p-4 overflow-auto max-h-40">
+                        {extractedDateTime}
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };
